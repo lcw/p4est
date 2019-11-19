@@ -1,0 +1,64 @@
+freebsd_task:
+  freebsd_instance:
+    image: freebsd-12-0-release-amd64
+  name: FreeBSD 12
+  script:
+  install_script:
+    - pkg install -y autotools mpich git gmake
+    - git submodule init
+    - git submodule update
+    - ./bootstrap
+  build_script:
+    - env LIBS=-lm ./configure CC=mpicc
+    - gmake
+  test_script:
+    - gmake check || { cat ./test-suite.log; exit 1; }
+
+macos_task:
+  osx_instance:
+    image: mojave-base
+  name: macOS Mojave
+  install_script:
+    - brew update
+    - brew install mpich autoconf automake libtool
+    - git submodule init
+    - git submodule update
+    - ./bootstrap
+  build_script:
+    - ./configure CC=mpicc
+    - make
+  test_script:
+    - make check || { cat ./test-suite.log; exit 1; }
+
+debian_task:
+  container:
+    image: debian:stretch
+  name: Debian Stretch
+  install_script:
+    - cat /etc/issue
+    - cat /etc/debian_version
+    - apt-get update
+    - sh -c "DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::='--force-confold' -y git autoconf automake libtool gcc make mpich zlib1g zlib1g-dev"
+    - git submodule init
+    - git submodule update
+    - ./bootstrap
+  build_script:
+    - ./configure CC=mpicc
+    - make -j4
+  test_script: make -j4 check || { cat ./test-suite.log; exit 1; }
+
+windows_task:
+  windows_container:
+    image: cirrusci/windowsservercore:2019
+    os_version: 2019
+  name: Windows 2019
+  install_script:
+    - choco install -y --no-progress mingw
+    - set PATH=%PATH%;C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin
+    - git submodule init
+    - git submodule update
+    - sh bootstrap
+  build_script:
+    - sh configure
+    - gmake
+  test_script: gmake check || { cat ./test-suite.log; exit 1; }
